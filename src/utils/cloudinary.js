@@ -10,6 +10,10 @@ cloudinary.config({
 });
     
 const uploadCloudinary = async (localFilePath) => {
+    console.log("Here is the cloudinary cloudname: ", process.env.CLOUDINARY_CLOUD_NAME);
+    console.log("Here is the cloudinary apikey: ", process.env.CLOUDINARY_API_KEY);
+    console.log("Here is the cloudinary api_secret: ", process.env.CLOUDINARY_API_SECRET);
+    
     try {
         if (!localFilePath) return null
         // upload the file on cloudinary
@@ -21,6 +25,7 @@ const uploadCloudinary = async (localFilePath) => {
         return response;
         
     } catch (error) {
+        console.log("error:", error);
         fs.unlinkSync(localFilePath) //remove the locally saved temporary file as the upload operation got failed
         return null;
     }
