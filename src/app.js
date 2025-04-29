@@ -14,7 +14,7 @@ app.use(express.urlencoded({extended: true, limit: "15kb"}))
 // extended refers to object ke andr v objected de skte hai kinda nested
 app.use(express.static("public"))
 app.use(cookieParser())
-// cookie parser is generally used to access cookies from user server and also helps in settting or modifying cookies.
+// cookie parser is generally used to access cookies from user server and also helps in setting or modifying cookies.
 
 
 // routes import

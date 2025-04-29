@@ -3,6 +3,8 @@ import { ApiError } from "../utils/ApiError.js"
 import { User } from "../models/user.model.js"
 import { uploadCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
+import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async(userId) => {
     try {
@@ -21,6 +23,7 @@ const generateAccessAndRefreshTokens = async(userId) => {
 }
 
 const registerUser = asyncHandler( async (req, res) => {
+
     // get user details from frontend
     // validation by required property - not empty
     // check if user already exists by unique property : username, email
@@ -33,7 +36,6 @@ const registerUser = asyncHandler( async (req, res) => {
 
 
     const {fullname, email, username, password} = req.body
-    // console.log("Here is your email: ", email);
     
     if (
         [fullname, email, username, password].some((field) => field?.trim() === "")
@@ -49,44 +51,38 @@ const registerUser = asyncHandler( async (req, res) => {
     if (existedUser) { 
         throw new ApiError(409, "User with email or username already exists")
     }
-    // console.log(req.files);
     
+    /*
+    ALTERNATE METHOD
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
-    // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    */
 
-    // let avatarLocalPath;
-    // if (req.files && Array.isArray(req.files.avatar) && req.files.avatar.length > 0) {
-    //     avatarLocalPath = req.files.avatar[0].path
-    // } 
+    let avatarLocalPath;
+    if (req.files &&
+        req.files.avatar && 
+        Array.isArray(req.files.avatar) && 
+        req.files.avatar.length > 0) {
+        avatarLocalPath = req.files.avatar[0].path;
+    } else {
+        throw new ApiError(400, "Avatar file is required")
+        
+    } 
+    
 
     let coverImageLocalPath;
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path
     }
 
-    if (!avatarLocalPath) {
-        console.log("Avatar local Path", avatarLocalPath);
-        
-        throw new ApiError(400, "Avatar file is required")
-    }
-
-    // console.log("About to upload avatar from path:", avatarLocalPath);
     const avatar = await uploadCloudinary(avatarLocalPath);
-    // console.log("Upload result:", avatar);
-    
-    // Then your existing condition
-    if (!avatar) {
-        console.log("Here is the local avatar path: ", avatar);
-        throw new ApiError(400, "Avatar file is required")  
-    }
-
     const coverImage = await uploadCloudinary(coverImageLocalPath)
 
-    // if (!avatar) {
-    //     console.log("Here is the local avatar path: ", avatar);
-    //     throw new ApiError(400, "Avatar file is required")  
-    // }
+    // Then your existing condition
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")  
+    }
 
     const user = await User.create({
         fullname,
@@ -113,6 +109,7 @@ const registerUser = asyncHandler( async (req, res) => {
 })
 
 const loginUser = asyncHandler(async(req, res) => {
+    
     // req body -> data
     // username or email 
     // find the user
@@ -121,7 +118,6 @@ const loginUser = asyncHandler(async(req, res) => {
     // send cookie
 
     const {email, username, password} = req.body
-    console.log(email);
     
 
     if (!username && !email) {
@@ -144,7 +140,7 @@ const loginUser = asyncHandler(async(req, res) => {
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
 
-    const loggedInUser = await User.findById(user._id).selectf("-password -refreshToken")
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
     const options = {
         httpOnly: true,
@@ -171,8 +167,8 @@ const logoutUser = asyncHandler(async(req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 //this removes the field from document
             }
         },
         {
@@ -188,12 +184,59 @@ const logoutUser = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .clearCookie("accessToken", options)
-    .clearCookie("refreshTokens", options)
+    .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged Out"))
+})
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized Request")
+    }
+
+    try {
+            const decodedToken = jwt.verify(
+                incomingRefreshToken,
+                process.env.REFRESH_TOKEN_SECRET
+            )
+        
+            const user = await User.findById(decodedToken?._id)
+        
+            if (!user) {
+                throw new ApiError(401, "Invalid Refresh Token")
+            }
+        
+            if (incomingRefreshToken !== user?.refreshToken) {
+                throw new ApiError(401, "Refresh Token is expired or used")
+            }
+        
+            const options = {
+                httpOnly: true,
+                secure: true
+            }
+        
+            const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens
+        
+            return res 
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json(
+                new ApiResponse(
+                    200,
+                    {accessToken, refreshAccessToken: newRefreshToken}, "Access token refreshed"
+                )
+            )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh token")
+    }
+
 })
 
 export { 
     registerUser,
     loginUser,
-    logoutUser
+    logoutUser,
+    refreshAccessToken
 }
