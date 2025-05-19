@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js"
 import { uploadCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 import { response } from "express"
 
 const generateAccessAndRefreshTokens = async(userId) => {
@@ -250,7 +250,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 
     return res
     .status(200)
-    .json(new ApiResponse(200, (), "Password changed successfully"))
+    .json(new ApiResponse(200, {}, "Password changed successfully"))
 })
 
 const getCurrentuser = asyncHandler(async (req, res) => {
@@ -342,6 +342,114 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     )
 })
 
+/*
+
+    THINGS I SHOULD KNOW
+
+    AGGREGATION:
+
+        It is the concept of performing data transformations and calculations.
+
+    PIPELINES: 
+
+        It refers to sequence of stages
+
+    AGGREGATION PIPELINES :
+
+        It transform data through a sequence of stages where each stage performs operations like filtering, grouping, sorting, and transforming documents.
+
+        It includes stages like $match, $sort, $limit, etc.
+
+        Advanced pipeline operators enable calculations, array multiplications and conditional logic.
+
+*/
+
+const getUserChannelProfile = asyncHandler(async(req, res) => {
+    const {username} = req.params
+
+    if (!username?.trim()) {
+        throw new ApiError(400, "username is missing")
+    }
+
+    const channel = await User.aggregate([
+        {
+            // $match operator is basically used to filter documents.
+
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },
+        {
+            // $lookup is used for complex joining conditions.
+
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscribed",
+                as: "subscribedTo"
+            }
+        },
+        {
+            // as per the name, $addFields is generally used for adding new fields to documents without modifying existing fields
+
+            $addFields: 
+            {
+                // $size is used to count items within array fields.
+
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                channelsSubscribedToCount: {
+                    $size: "subscribedTo"
+                },
+                isSubscribed: 
+                {
+                    // $cond operator is used to determine the condition if it is either true or false.
+
+                    $cond: 
+                    {
+                        // $in operator is used to match values within an array.
+
+                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $projects: {
+                fullname: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedTo: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
+            }
+        }
+    ])
+
+    if (!channel?.length) {
+        throw new ApiError(404, "channel does not exists")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, "User channel fetched successfully")
+    )
+})
+
 export { 
     registerUser,
     loginUser,
@@ -351,5 +459,6 @@ export {
     getCurrentuser,
     updateAccountDetails,
     updateUserCoverImage,
-    updateUserAvatar
+    updateUserAvatar,
+    getUserChannelProfile
 }
