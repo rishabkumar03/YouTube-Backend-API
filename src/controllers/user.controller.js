@@ -217,7 +217,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
                 secure: true
             }
         
-            const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens
+            const {accessToken, newRefreshToken} = await generateAccessAndRefreshTokens(user._id)
         
             return res 
             .status(200)
@@ -256,7 +256,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 const getCurrentuser = asyncHandler(async (req, res) => {
     return res
     .status(200)
-    .json(200, req.user, "current user fetched successfully")
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"))
 })
 
 const updateAccountDetails = asyncHandler(async(req, res) => {
@@ -266,7 +266,7 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const user = User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
         req.user?._id,
         {
             $set: {
@@ -408,7 +408,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
                     $size: "$subscribers"
                 },
                 channelsSubscribedToCount: {
-                    $size: "subscribedTo"
+                    $size: "$subscribedTo"
                 },
                 isSubscribed: 
                 {
@@ -426,7 +426,10 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
             }
         },
         {
-            $projects: {
+            $project: {
+
+                // 
+
                 fullname: 1,
                 username: 1,
                 subscribersCount: 1,

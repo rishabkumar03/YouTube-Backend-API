@@ -46,14 +46,14 @@ router
     logoutUser
 )
 
-router.
-route("/refresh-token").
-post(
+router
+.route("/refresh-token")
+.post(
     refreshAccessToken
 )
 
-router.
-route("/change-password")
+router
+.route("/change-password")
 .post(
     verifyJWT, 
     changeCurrentPassword
@@ -85,7 +85,7 @@ router
 .route("/cover-image")
 .patch(
     verifyJWT, 
-    upload.single("/coverImage"), 
+    upload.single("coverImage"), 
     updateUserCoverImage
 )
 
