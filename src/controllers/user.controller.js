@@ -428,7 +428,7 @@ const getUserChannelProfile = asyncHandler(async(req, res) => {
         {
             $project: {
 
-                // 
+                // It's used to include[1], exclude[0], rename[$fieldName], or create new fields[$add:["$fieldName"]] in the output documents.
 
                 fullname: 1,
                 username: 1,
