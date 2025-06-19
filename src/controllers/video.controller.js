@@ -204,10 +204,84 @@ const getAllVideos = asyncHandler(async (req, res) => {
     }
 })
 
-// const publishAVideo = asyncHandler(async (req, res) => {
-//     const { title, description} = req.body
-//     // TODO: get video, upload to cloudinary, create video
-// })
+const publishAVideo = asyncHandler(async (req, res) => {
+    const { title, description } = req.body
+
+    // TODO: get video, upload to cloudinary, create video
+
+    // if (
+    //     [title, description].some((field) => field?.trim() === "")
+    // ) {
+    //     throw new ApiError(400, "Both fields are required")
+    // }
+
+    if (!title) {
+        throw new ApiError(400, "Title is required")
+    }
+
+    if (!description) {
+        throw new ApiError(400, "Description is required")
+    }
+
+    let thumbnailLocalPath;
+    if (req.files &&
+        req.files.thumbnail &&
+        Array.isArray(req.files.thumbnail) &&
+        req.files.thumbnail.length > 0){
+        thumbnailLocalPath = req.files.thumbnail[0].path;        
+    } else {
+        throw new ApiError(401, "Thumbnail file is required")
+    }
+
+    let videoFileLocalPath;
+    if (req.files &&
+        req.files.videoFile &&
+        Array.isArray(req.files.videoFile) &&
+        req.files.videoFile.length > 0) {
+        videoFileLocalPath = req.files.videoFile[0].path;
+    } else {
+        throw new ApiError(401, "Media file is required")
+    }
+
+    const thumbnail = await uploadCloudinary(thumbnailLocalPath);
+    const videoFile = await uploadCloudinary(videoFileLocalPath);
+
+    if (!thumbnail) {
+        throw new ApiError(400, "Thumbnail file is mandatory")
+    }
+
+    if (!videoFile) {
+        throw new ApiError(400, "Media file is mandatory")
+    }
+
+    const duration = videoFile.duration || 0;
+
+    const video = await Video.create({
+        thumbnail: thumbnail.url,
+        videoFile: videoFile.url,
+        title: title.trim(),
+        description: description.trim().length>10,
+        duration: duration,
+    })
+
+    const uploadedVideo = await Video.findById(video._id)
+    .populate(
+        "owner",
+        "username fullname avatar"
+    )
+
+    console.log("Media has been uploaded", uploadedVideo);
+
+    if (!uploadedVideo) {
+        throw new ApiError(500, "Something went wrong while uploading the video");
+    }
+
+    return res
+    .status(201)
+    .json(
+        new ApiResponse(200, uploadedVideo, "Video Uploaded successfully")
+    )
+})
 
 // const getVideoById = asyncHandler(async (req, res) => {
 //     const { videoId } = req.params
@@ -230,5 +304,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
 // })
 
 export {
-    getAllVideos
+    getAllVideos,
+    publishAVideo
 }
