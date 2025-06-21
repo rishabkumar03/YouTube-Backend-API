@@ -261,7 +261,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         videoFile: videoFile.url,
         title: title.trim(),
         description: description.trim().length>10,
-        duration: duration,
+        duration: duration
     })
 
     const uploadedVideo = await Video.findById(video._id)
@@ -283,10 +283,44 @@ const publishAVideo = asyncHandler(async (req, res) => {
     )
 })
 
-// const getVideoById = asyncHandler(async (req, res) => {
-//     const { videoId } = req.params
-//     //TODO: get video by id
-// })
+const getVideoById = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+
+    //TODO: get video by id
+
+    /*
+    -- Validate videoId
+    -- Find video by ID and populate owner details
+    -- Check if video exists
+    -- Increment view count
+    -- Return response
+    */
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")
+    }
+
+    const video = await Video.findById(videoId)
+    .populate(
+        "owner", "username fullname avatar"
+    )
+
+    if(!video) {
+        throw new ApiError(400, "Video doesn't exist")
+    }
+
+    await Video.findByIdAndUpdate(
+        videoId,
+        { $inc: { views: 1 } },
+        { new : true}
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, "Video Fetched Successfully")
+    )
+})
 
 // const updateVideo = asyncHandler(async (req, res) => {
 //     const { videoId } = req.params
@@ -305,5 +339,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
 export {
     getAllVideos,
-    publishAVideo
+    publishAVideo,
+    getVideoById
 }
