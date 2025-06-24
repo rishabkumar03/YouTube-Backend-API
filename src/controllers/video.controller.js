@@ -49,7 +49,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     const matchStage = {}
 
     if (userId) {
-        matchStage.owner = new mongoose.Types.isValidObjectId(userId)
+        matchStage.owner = new mongoose.Types.ObjectId(userId)
     }
 
     // $regex is a MongoDB query operator that provides regular expression capabilities for pattern matching in queries.
@@ -205,24 +205,37 @@ const getAllVideos = asyncHandler(async (req, res) => {
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
+
+    // get video details from frontend
+    // validation by required property - not empty
+    // check for video file and thumbnail
+    // upload them to cloudinary
+    // create video object - create entry in db
+    // return response
+
     const { title, description } = req.body
 
     // TODO: get video, upload to cloudinary, create video
 
-    // if (
-    //     [title, description].some((field) => field?.trim() === "")
-    // ) {
-    //     throw new ApiError(400, "Both fields are required")
+    if (
+        [title, description].some((field) => field?.trim() === "")
+    ) {
+        throw new ApiError(400, "Both fields are required")
+    }
+
+    if (!req.user) {
+        throw new ApiError(404, "User Authentication required")
+    }
+
+    // if (!title) {
+    //     throw new ApiError(400, "Title is required")
     // }
 
-    if (!title) {
-        throw new ApiError(400, "Title is required")
-    }
+    // if (!description) {
+    //     throw new ApiError(400, "Description is required")
+    // }
 
-    if (!description) {
-        throw new ApiError(400, "Description is required")
-    }
-
+    // Check for thumbnail
     let thumbnailLocalPath;
     if (req.files &&
         req.files.thumbnail &&
@@ -230,9 +243,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
         req.files.thumbnail.length > 0){
         thumbnailLocalPath = req.files.thumbnail[0].path;        
     } else {
-        throw new ApiError(401, "Thumbnail file is required")
+        throw new ApiError(400, "Thumbnail file is required")
     }
 
+    // Check for video file
     let videoFileLocalPath;
     if (req.files &&
         req.files.videoFile &&
@@ -240,7 +254,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         req.files.videoFile.length > 0) {
         videoFileLocalPath = req.files.videoFile[0].path;
     } else {
-        throw new ApiError(401, "Media file is required")
+        throw new ApiError(400, "Media file is required")
     }
 
     const thumbnail = await uploadCloudinary(thumbnailLocalPath);
@@ -254,14 +268,13 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Media file is mandatory")
     }
 
-    const duration = videoFile.duration || 0;
-
     const video = await Video.create({
+        owner: req.user._id,
         thumbnail: thumbnail.url,
         videoFile: videoFile.url,
         title: title.trim(),
-        description: description.trim().length>10,
-        duration: duration
+        description: description.trim(),
+        duration: videoFile.duration || 0
     })
 
     const uploadedVideo = await Video.findById(video._id)
@@ -296,23 +309,53 @@ const getVideoById = asyncHandler(async (req, res) => {
     -- Return response
     */
 
-    if (!isValidObjectId(videoId)) {
+    if (!mongoose.isValidObjectId(videoId)) {
         throw new ApiError(400, "Invalid Video Id")
     }
 
-    const video = await Video.findById(videoId)
-    .populate(
-        "owner", "username fullname avatar"
-    )
+    const video = await Video.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullname: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                owner: {
+                    // $first is an aggregation operator that returns the first element of an array.
+                    $first: "$owner"
+                }
+            }
+        }
+    ])
 
-    if(!video) {
-        throw new ApiError(400, "Video doesn't exist")
+    if (!video || video.length === 0) {
+        throw new ApiError(404, "Video not found")
     }
 
+    // Increment view count
     await Video.findByIdAndUpdate(
-        videoId,
-        { $inc: { views: 1 } },
-        { new : true}
+        videoId, 
+        {
+            $inc: { views: 1 }
+        }
     )
 
     return res
@@ -322,11 +365,54 @@ const getVideoById = asyncHandler(async (req, res) => {
     )
 })
 
-// const updateVideo = asyncHandler(async (req, res) => {
-//     const { videoId } = req.params
-//     //TODO: update video details like title, description, thumbnail
+const updateVideo = asyncHandler(async (req, res) => {
 
-// })
+    // get video id from params and video details from body
+    // validation - check if video exists and user is owner
+    // update video details
+    // return updated video
+
+    const { videoId } = req.params
+    const { title, description } = req.body
+    
+    console.log("Received Data:", { title, description });
+    
+
+    //TODO: update video details like title, description, thumbnail
+    
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")
+    }
+
+    if (!title && !description) {
+        throw new ApiError(404, "Atleast one field is required")
+    }
+
+    // Find the existing video first
+    const existingVideo = await Video.findById(videoId)
+    if (!existingVideo) {
+        throw new ApiError(404, "Video does not exist")
+    }
+
+    if (existingVideo.owner.toString() !== req.user._id.toString()){
+        throw new ApiError(404, "User does not match")
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                title,
+                description
+            }
+        },
+        {new: true}
+    ).populate("owner", "username fullname avatar")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, "Video details updated successfully"))
+})
 
 // const deleteVideo = asyncHandler(async (req, res) => {
 //     const { videoId } = req.params
@@ -340,5 +426,6 @@ const getVideoById = asyncHandler(async (req, res) => {
 export {
     getAllVideos,
     publishAVideo,
-    getVideoById
+    getVideoById,
+    updateVideo
 }

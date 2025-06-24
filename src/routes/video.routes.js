@@ -2,7 +2,8 @@ import { Router } from "express";
 import {
     getAllVideos,
     publishAVideo,
-    getVideoById
+    getVideoById,
+    updateVideo
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -29,6 +30,7 @@ router
             maxCount: 1
         }
     ]),
+    verifyJWT,
     publishAVideo
 )
 
@@ -37,6 +39,13 @@ router
 .get(
     verifyJWT,
     getVideoById
+)
+
+router
+.route("/update/:videoId")
+.patch(
+    verifyJWT,
+    updateVideo
 )
 
 export default router
