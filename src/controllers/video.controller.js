@@ -1,4 +1,4 @@
-import mongoose, {isValidObjectId} from "mongoose"
+import mongoose from "mongoose"
 import {Video} from "../models/video.model.js"
 import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
@@ -443,14 +443,44 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, deleteVideo, "Video deleted successfully"))
 })
 
-// const togglePublishStatus = asyncHandler(async (req, res) => {
-    // const { videoId } = req.params
-// })
+// "Toggle publish status" typically refers to switching a piece of content between two states. (Here, keeping video public or private)
+const togglePublishStatus = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video ID")
+    }
+
+    const existingVideo = await Video.findById(videoId)
+    if (!existingVideo) {
+        throw new ApiError(404, "Video doesn't exist")
+    }
+
+    if(existingVideo.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(404, "User doesn't match")
+    }
+
+    const updatedVideo = await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set: {
+                isPublished: !existingVideo.isPublished
+            }
+        },
+        { new: true }
+    ).populate("owner", "username fullname avatar")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, updatedVideo, `Video ${updatedVideo.isPublished ? 'published' : 'unpublished'} successfully`))
+})
+
 
 export {
     getAllVideos,
     publishAVideo,
     getVideoById,
     updateVideo,
-    deleteVideo
+    deleteVideo,
+    togglePublishStatus
 }

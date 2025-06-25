@@ -4,7 +4,8 @@ import {
     publishAVideo,
     getVideoById,
     updateVideo,
-    deleteVideo
+    deleteVideo,
+    togglePublishStatus
 } from "../controllers/video.controller.js"
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -54,6 +55,13 @@ router
 .delete(
     verifyJWT,
     deleteVideo
+)
+
+router
+.route("/toggle-status/:videoId")
+.put(
+    verifyJWT,
+    togglePublishStatus
 )
 
 export default router
