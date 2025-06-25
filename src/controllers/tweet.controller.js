@@ -38,9 +38,75 @@ const createTweet = asyncHandler(async (req, res) => {
     )
 })
 
-// const getUserTweets = asyncHandler(async (req, res) => {
-//     // TODO: get user tweets
-// })
+const getUserTweets = asyncHandler(async (req, res) => {
+    // TODO: get user tweets
+
+    const { userId } = req.params
+
+    if (userId && !mongoose.isValidObjectId(userId)){
+        throw new ApiError(400, "Invalid user ID format")
+    }
+
+    if (userId) {
+        const existedUser = await User.findById(userId)
+        if(!existedUser){
+            throw new ApiError(400, "User does not exist")
+        }
+    }
+    
+    const pipeline = []
+    
+    if (userId) {
+        pipeline.push({
+            $match: {
+                owner: new mongoose.Types.ObjectId(userId)
+            }
+        })
+    }
+    
+    pipeline.push({
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "ownerDetails",
+            pipeline: [
+                {
+                    $project: {
+                        username: 1,
+                        fullname: 1,
+                        avatar: 1
+                    }
+                }
+            ]
+        }
+    })
+    
+    pipeline.push({
+        $addFields: {
+            owner: {
+                $first: "$ownerDetails"
+            }
+        }
+    })
+    
+    pipeline.push({
+        $project: {
+            content: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            owner: 1
+        }
+    })
+    
+    const tweet = await Tweet.aggregate(pipeline)
+    
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, tweet, "Tweets fetched successfully")
+    )
+})
 
 // const updateTweet = asyncHandler(async (req, res) => {
 //     //TODO: update tweet
@@ -51,5 +117,6 @@ const createTweet = asyncHandler(async (req, res) => {
 // })
 
 export {
-    createTweet
+    createTweet,
+    getUserTweets
 }

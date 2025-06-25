@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
-    createTweet
+    createTweet,
+    getUserTweets
 } from "../controllers/tweet.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -14,9 +15,12 @@ router
     createTweet
 );
 
-// router
-// .route("/user/:userId")
-// .get(getUserTweets);
+router
+.route("/user-tweet/:userId")
+.get(
+    verifyJWT,
+    getUserTweets
+);
 
 // router
 // .route("/:tweetId")
