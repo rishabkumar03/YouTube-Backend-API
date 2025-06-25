@@ -108,9 +108,44 @@ const getUserTweets = asyncHandler(async (req, res) => {
     )
 })
 
-// const updateTweet = asyncHandler(async (req, res) => {
-//     //TODO: update tweet
-// })
+const updateTweet = asyncHandler(async (req, res) => {
+    //TODO: update tweet
+
+    const { tweetId } = req.params
+    const { content } = req.body
+
+    if (!mongoose.isValidObjectId(tweetId)) {
+        throw new ApiError(404, "Invalid Tweet Id")
+    }
+
+    if (!content) {
+        throw new ApiError(404, "Content field is required")
+    }
+
+    const existingTweet = await Tweet.findById(tweetId)
+
+    if(!existingTweet) {
+        throw new ApiError(404, "Tweet doesn't exist")
+    }
+
+    if (existingTweet.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(404, "Tweet does not match")
+    }
+
+    const updatedTweet = await Tweet.findByIdAndUpdate(
+        tweetId,
+        {
+            $set: {
+                content,
+            }
+        },
+        {new: true}
+    ).populate("owner", "username fullname avatar")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, updatedTweet, "Tweet updated successfully"))
+})
 
 // const deleteTweet = asyncHandler(async (req, res) => {
 //     //TODO: delete tweet
@@ -118,5 +153,6 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 export {
     createTweet,
-    getUserTweets
+    getUserTweets,
+    updateTweet
 }

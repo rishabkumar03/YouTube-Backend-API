@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import {
     createTweet,
-    getUserTweets
+    getUserTweets,
+    updateTweet
 } from "../controllers/tweet.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -22,8 +23,13 @@ router
     getUserTweets
 );
 
-// router
-// .route("/:tweetId")
-// .patch(updateTweet).delete(deleteTweet);
+router
+.route("/update-tweet/:tweetId")
+.patch(
+    verifyJWT,
+    updateTweet
+)
+
+// .delete(deleteTweet);
 
 export default router
