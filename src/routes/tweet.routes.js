@@ -2,7 +2,8 @@ import { Router } from 'express';
 import {
     createTweet,
     getUserTweets,
-    updateTweet
+    updateTweet,
+    deleteTweet
 } from "../controllers/tweet.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -30,6 +31,11 @@ router
     updateTweet
 )
 
-// .delete(deleteTweet);
+router
+.route("/delete-tweet/:tweetId")
+.delete(
+    verifyJWT,
+    deleteTweet
+)
 
 export default router

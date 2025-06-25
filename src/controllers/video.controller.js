@@ -440,7 +440,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     return res
     .status(200)
-    .json(new ApiResponse(200, deleteVideo, "Video deleted successfully"))
+    .json(new ApiResponse(200, deletedVideo, "Video deleted successfully"))
 })
 
 // "Toggle publish status" typically refers to switching a piece of content between two states. (Here, keeping video public or private)
