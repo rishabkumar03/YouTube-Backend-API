@@ -37,7 +37,7 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .json(
-            new ApiResponse(200, { subscribed : false }, "Unsubscibed Successfully") 
+            new ApiResponse(200, { subscribed : false }, "Unsubscribed Successfully") 
         )
     }
 
@@ -55,9 +55,70 @@ const toggleSubscription = asyncHandler(async (req, res) => {
     }
 })
 
+// controller to return channel list to which user has subscribed
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+    const { subscriberId } = req.params
+
+    if (!mongoose.isValidObjectId(subscriberId)) {
+        throw new ApiError(400, "Invalid subscriberId")
+    }
+
+    const subscriber = await User.findById(subscriberId)
+    if (!subscriber) {
+        throw new ApiError(404, "Subscriber does not exist")
+    }
+
+    try {
+        const subscribedChannel = await Subscription.aggregate([
+            {
+                $match: {
+                    subscriber: new mongoose.Types.ObjectId(subscriberId)
+                }
+            },
+            {
+                $lookup:{
+                    from: "users",
+                    localField: "channel",
+                    foreignField: "_id",
+                    as: "channelDetails",
+                    pipeline: [
+                        {
+                            $project: {
+                                username: 1,
+                                fullname: 1,
+                                avatar: 1
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    channel: {
+                        $first: "$channelDetails"
+                    }
+                }
+            },
+            {
+                $project: {
+                    channel: 1,
+                    createdAt: 1
+                }
+            }
+        ])
+    
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200, subscribedChannel, "Channel Details fetched successfully")
+        )
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while fetching channel")
+    }
+})
+
 
 export {
     toggleSubscription,
-    getSubscribedChannels,
-    getUserChannelSubscribers
+    getSubscribedChannels
 }
