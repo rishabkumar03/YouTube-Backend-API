@@ -117,8 +117,75 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     }
 })
 
+// controller to return subscriber list of a channel
+const getUserChannelSubscribers = asyncHandler(async (req, res) => {
+    const {channelId} = req.params
+
+    /*
+    -- Validate channelId
+    -- Check if channel exists
+    -- Build aggregation pipeline to get subscribers
+    -- Return subscribers list
+    */
+
+    if (!mongoose.isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channelId")
+    }
+
+    const channel = await User.findById(channelId)
+    if (!channel) {
+        throw new ApiError(404, "Channel doesn't exist")
+    }
+    
+
+    const subscriber = await Subscription.aggregate([
+        {
+            $match: {
+                channel: new mongoose.Types.ObjectId(channelId)
+                }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "subscriber",
+                foreignField: "_id",
+                as: "subscriberDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullname: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                subscriber: {
+                    $first: "$subscriberDetails"
+                }
+            }
+        },
+        {
+            $project: {
+                subscriber: 1,
+                createdAt: 1
+            }
+        }
+    ])
+    
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, subscriber,"Subscriber Details fetched successfully")
+    )
+
+})
 
 export {
     toggleSubscription,
-    getSubscribedChannels
+    getSubscribedChannels,
+    getUserChannelSubscribers
 }

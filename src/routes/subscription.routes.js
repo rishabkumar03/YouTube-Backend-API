@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import {
     toggleSubscription,
-    getSubscribedChannels
+    getSubscribedChannels,
+    getUserChannelSubscribers
 } from "../controllers/subscription.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -15,13 +16,6 @@ router
     toggleSubscription
 );
 
-// router
-// .route("/u/:subscriberId")
-// .get(
-//     verifyJWT,
-//     getUserChannelSubscribers
-// );
-
 router
 .route("/subscribed-channels/:subscriberId")
 .get(
@@ -29,5 +23,11 @@ router
     getSubscribedChannels
 )
 
+router
+.route("/u/:channelId")
+.get(
+    verifyJWT,
+    getUserChannelSubscribers
+);
 
 export default router
