@@ -248,7 +248,35 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, updatePlaylist, "Video removed successfully from playlist")
+        new ApiResponse(200, updatedPlaylist, "Video removed successfully from playlist")
+    )
+})
+
+const deletePlaylist = asyncHandler(async (req, res) => {
+    const {playlistId} = req.params
+    // TODO: delete playlist
+
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid Playlist Id")
+    }
+
+    const existingPlaylist = await Playlist.findById(playlistId)
+    if (!existingPlaylist) {
+        throw new ApiError(404, "Playlist doesnt exist")
+    }
+
+    if (existingPlaylist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(400, "You can not modify this playlist")
+    }
+
+    const deletedPlaylist = await Playlist.findByIdAndDelete(
+        playlistId
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, deletedPlaylist, "Playlist deleted successfully")
     )
 })
 
@@ -257,5 +285,6 @@ export {
     getUserPlaylists,
     getPlaylistById,
     addVideoToPlaylist,
-    removeVideoFromPlaylist
+    removeVideoFromPlaylist,
+    deletePlaylist
 }
