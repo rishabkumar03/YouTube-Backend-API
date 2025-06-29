@@ -4,6 +4,7 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import { User } from "../models/user.model.js"
+import { Video } from "../models/video.model.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -51,7 +52,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     if (userId) {
         const existedUser = await User.findById(userId)
         if (!existedUser) {
-            throw new ApiError(400, "User doesn't exist")
+            throw new ApiError(404, "User doesn't exist")
         }
     }
 
@@ -158,8 +159,61 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     )
 })
 
+const addVideoToPlaylist = asyncHandler(async (req, res) => {
+    const {playlistId, videoId} = req.params
+
+    // Validation
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid Playlist Id")
+    }
+
+    const existedPlaylist = await Playlist.findById(playlistId)
+    if (!existedPlaylist) {
+        throw new ApiError(404, "Playlist doesn't exist")
+    }
+    
+
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")
+    }
+
+    const existedVideo = await Video.findById(videoId)
+    if (!existedVideo) {
+        throw new ApiError(404, "Video doesn't exist")
+    }
+    
+
+    // Verify Ownership
+    if (existedPlaylist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You dont have permission to modify this playlist")
+    }
+
+    // If video already in playlist
+    const isVideoAlreadyExistInPlaylist = existedPlaylist.videos.includes(videoId) 
+    if (isVideoAlreadyExistInPlaylist) {
+        throw new ApiError(409, "Video already exists in playlist")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $addToSet: { videos : videoId }, // $addToSet prevents duplication
+            $inc: { totalVideos : 1 } // $inc is increment operator
+        },
+        { new : true }
+    ).populate("videos", "title thumbnail duration views createdAt owner")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, updatedPlaylist, "video added successfully to playlist")
+    )
+})
+
+
 export {
     createPlaylist,
     getUserPlaylists,
-    getPlaylistById
+    getPlaylistById,
+    addVideoToPlaylist
 }
