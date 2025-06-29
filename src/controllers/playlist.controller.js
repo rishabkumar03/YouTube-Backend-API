@@ -280,11 +280,52 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     )
 })
 
+const updatePlaylist = asyncHandler(async (req, res) => {
+    const {playlistId} = req.params
+    const {name, description} = req.body
+    //TODO: update playlist
+
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid Playlist Id")
+    }
+
+    const existingPlaylist = await Playlist.findById(playlistId)
+    if (!existingPlaylist) {
+        throw new ApiError(404, "Playlist doesn't exist")
+    }
+
+    if (!name && !description) {
+        throw new ApiError(400, "Atleast one of them is required")
+    }
+
+    if (existingPlaylist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(400, "You cannot modify this playlist")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $set: { 
+                name,
+                description
+            }
+        },
+        { new : true }
+    ).populate("owner", "username fullname avatar")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, updatedPlaylist, "Playlist updated successfully")
+    )
+})
+
 export {
     createPlaylist,
     getUserPlaylists,
     getPlaylistById,
     addVideoToPlaylist,
     removeVideoFromPlaylist,
-    deletePlaylist
+    deletePlaylist,
+    updatePlaylist
 }

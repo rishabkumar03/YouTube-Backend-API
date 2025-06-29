@@ -5,7 +5,8 @@ import {
     getPlaylistById,
     addVideoToPlaylist,
     removeVideoFromPlaylist,
-    deletePlaylist
+    deletePlaylist,
+    updatePlaylist
 } from "../controllers/playlist.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -55,7 +56,12 @@ router
     deletePlaylist
 );
 
-//     .patch(updatePlaylist)
+router
+.route("/update/:playlistId")
+.patch(
+    verifyJWT,
+    updatePlaylist
+)
 
 
 export default router
