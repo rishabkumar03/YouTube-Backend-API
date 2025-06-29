@@ -210,10 +210,52 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     )
 })
 
+const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
+    const {playlistId, videoId} = req.params
+    // TODO: remove video from playlist
+
+    if (!mongoose.isValidObjectId(playlistId)) {
+        throw new ApiError(400, "Invalid Playlist Id")
+    }
+
+    const existedPlaylist = await Playlist.findById(playlistId)
+    if (!existedPlaylist) {
+        throw new ApiError(404, "Playlist doesnt exist")
+    }
+
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")  
+    }
+
+    const existedVideo = await Video.findById(videoId)
+    if (!existedVideo) {
+        throw new ApiError(404, "Video doesnt exist")
+    }
+
+    if (existedPlaylist.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You dont have permission to modify this playlist")
+    }
+
+    const updatedPlaylist = await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $pull: { videos : videoId }, // we can simply say $pull is the opposite of $addToSet, it is used in specific removal
+            $inc: { totalVideos : -1 } // here, it behaves like decrement operator
+        }, 
+        { new : true }
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, updatePlaylist, "Video removed successfully from playlist")
+    )
+})
 
 export {
     createPlaylist,
     getUserPlaylists,
     getPlaylistById,
-    addVideoToPlaylist
+    addVideoToPlaylist,
+    removeVideoFromPlaylist
 }
