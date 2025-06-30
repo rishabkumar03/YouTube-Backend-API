@@ -38,7 +38,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     if (userId) {
         const existedUser = await User.findById(userId)
         if (!existedUser) {
-            throw new ApiError(400, "User does not exist")
+            throw new ApiError(404, "User does not exist")
         }
     }
 
