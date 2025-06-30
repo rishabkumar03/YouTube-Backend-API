@@ -77,9 +77,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
     pipeline.push({
         $project: {
             content: 1,
-            owner: 1,
-            createdAt: 1,
-            updatedAt: 1
+            owner: 1
         }
     })
 
@@ -140,6 +138,70 @@ const getVideoComments = asyncHandler(async (req, res) => {
     }
 })
 
+const addComment = asyncHandler(async (req, res) => {
+    // TODO: add a comment to a video
+
+    const { content } = req.body
+    const { videoId } = req.params
+
+    if (content.trim() < 1) {
+        throw new ApiError(400, "Comment cannot be empty")
+    }
+
+    if (content.trim() > 500) {
+        throw new ApiError(400, "Comment cannot exceed more than 500 characters")
+    }
+
+    if (!content) {
+        throw new ApiError(400, "Content field is required")
+    }
+
+    if (!mongoose.isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid Video Id")
+    }
+
+    const existingVideo = await Video.findById(videoId)
+    if (!existingVideo) {
+        throw new ApiError(404, "Video doesnt exist")
+    }
+
+    if (!req.user) {
+        throw new ApiError(404, "User Authentication required")
+    }
+
+    const comment = await Comment.create({
+        video: videoId,
+        owner: req.user._id,
+        content: content.trim()
+    })
+
+    await Video.findByIdAndUpdate(
+        videoId,
+        { $inc: { commentsCount: 1 }},
+        { new : true }
+    )
+
+    const uploadedComment = await Comment.findById(comment._id)
+    .populate(
+        "owner",
+        "username fullname avatar"
+    )
+
+    console.log("Comment has been uploaded", uploadedComment);
+
+    if (!uploadedComment) {
+        throw new ApiError(500, "Something went wrong while uploading the comment")
+    }
+
+    return res
+    .status(201)
+    .json(
+        new ApiResponse(200, uploadedComment, "Comment uploaded successfully")
+    )
+    
+})
+
 export {
-    getVideoComments
+    getVideoComments,
+    addComment
 }
