@@ -374,9 +374,6 @@ const updateVideo = asyncHandler(async (req, res) => {
 
     const { videoId } = req.params
     const { title, description } = req.body
-    
-    console.log("Received Data:", { title, description });
-    
 
     //TODO: update video details like title, description, thumbnail
     

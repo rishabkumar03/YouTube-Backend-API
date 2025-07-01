@@ -187,8 +187,6 @@ const addComment = asyncHandler(async (req, res) => {
         "username fullname avatar"
     )
 
-    console.log("Comment has been uploaded", uploadedComment);
-
     if (!uploadedComment) {
         throw new ApiError(500, "Something went wrong while uploading the comment")
     }
@@ -201,7 +199,47 @@ const addComment = asyncHandler(async (req, res) => {
     
 })
 
+const updateComment = asyncHandler(async (req, res) => {
+    // TODO: update a comment
+
+    const { commentId } = req.params
+    const { content } = req.body
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid Comment Id")
+    }
+
+    if (!content) {
+        throw new ApiError(404, "Content field is required")
+    }
+
+    const existingComment = await Comment.findById(commentId)
+    if (!existingComment) {
+        throw new ApiError(404, "Comment does not exist")
+    }
+
+    if(existingComment.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(404, "User does not match")
+    }
+    
+    const updatedComment = await Comment.findByIdAndUpdate(commentId,
+        {
+            $set: {
+                content
+            }
+        }, 
+        { new: true }
+    ).populate("owner", "fullname username avatar")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, updatedComment, "Comment details updated successfully")
+    )
+})
+
 export {
     getVideoComments,
-    addComment
+    addComment,
+    updateComment
 }
