@@ -4,6 +4,8 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import { Video } from "../models/video.model.js"
+import { Comment } from "../models/comment.model.js"
+import { Tweet } from "../models/tweet.model.js"
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
@@ -48,7 +50,49 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     }
 })
 
+const toggleCommentLike = asyncHandler(async (req, res) => {
+    const {commentId} = req.params
+    //TODO: toggle like on comment
+
+    if (!mongoose.isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid Comment Id")
+    }
+
+    const existingComment = await Comment.findById(commentId)
+    if (!existingComment) {
+        throw new ApiError(404, "Comment does not exist")
+    }
+
+    const existingLike = await Like.findOne({
+        likedBy: req.user._id,
+        comment: commentId
+    })
+
+    if (existingLike) {
+        await Like.findByIdAndDelete(existingLike._id)
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200, { liked: false}, "Comment uniked successfully")
+        )
+    }
+
+    else {
+        const newLikedComment = await Like.create({
+            likedBy: req.user._id,
+            comment: commentId
+        })
+
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(200, { liked: true, likeData: newLikedComment }, "Comment liked successfully" )
+        )
+    }
+})
 
 export {
-    toggleVideoLike
+    toggleVideoLike,
+    toggleCommentLike,
+    toggleTweetLike
 }
