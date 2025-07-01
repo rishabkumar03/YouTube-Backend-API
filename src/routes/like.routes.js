@@ -23,12 +23,12 @@ router
     toggleCommentLike
 );
 
-// router
-// .route("/toggle/t/:tweetId")
-// .post(
-//     verifyJWT,
-//     toggleTweetLike
-// );
+router
+.route("/toggle/t/:tweetId")
+.post(
+    verifyJWT,
+    toggleTweetLike
+);
 
 // router.route("/videos").get(getLikedVideos);
 
