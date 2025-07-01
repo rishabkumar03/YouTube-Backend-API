@@ -238,8 +238,38 @@ const updateComment = asyncHandler(async (req, res) => {
     )
 })
 
+const deleteComment = asyncHandler(async (req, res) => {
+    // TODO: delete a comment
+
+    const {commentId} = req.params
+
+    if (!mongoose.isValidObjectId(commentId)){
+        throw new ApiError(400, "Invalid Comment Id")
+    }
+
+    const existingComment = await Comment.findById(commentId)
+    if (!existingComment) {
+        throw new ApiError(404, "Comment does not exist")
+    }
+
+    if (existingComment.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(404, "You can not modify this playlist")
+    }
+
+    const deletedComment = await Comment.findByIdAndDelete(
+        commentId
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, deletedComment, "Comment deleted successfully")
+    )
+})
+
 export {
     getVideoComments,
     addComment,
-    updateComment
+    updateComment,
+    deleteComment
 }
