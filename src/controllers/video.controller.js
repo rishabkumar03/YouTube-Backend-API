@@ -361,7 +361,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, "Video Fetched Successfully")
+        new ApiResponse(200, video[0], "Video Fetched Successfully")
     )
 })
 
@@ -425,6 +425,10 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     if (!existingVideo) {
         throw new ApiError(404, "Video doesn't exist")
+    }
+
+    if (!existingVideo.owner) {
+        throw new ApiError(404, "wtf, owner is not here?")
     }
 
     if (existingVideo.owner.toString() !== req.user._id.toString()) {

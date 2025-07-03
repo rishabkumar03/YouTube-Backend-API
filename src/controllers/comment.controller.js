@@ -134,7 +134,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
             )
         )
     } catch (error) {
-        throw new ApiError("Something went wrong while fetching the comments");
+        throw new ApiError(500, "Something went wrong while fetching the comments");
     }
 })
 

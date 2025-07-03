@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { 
     toggleVideoLike,
     toggleCommentLike,
-    toggleTweetLike
+    toggleTweetLike,
+    getLikedVideos
 } from "../controllers/like.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 
@@ -30,6 +31,11 @@ router
     toggleTweetLike
 );
 
-// router.route("/videos").get(getLikedVideos);
+router
+.route("/videos/u/:userId")
+.get(
+    verifyJWT,
+    getLikedVideos
+);
 
 export default router
