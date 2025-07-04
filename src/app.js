@@ -26,6 +26,7 @@ import playlistRouter from './routes/playlist.routes.js'
 import LikeRouter from './routes/like.routes.js'
 import CommentRouter from './routes/comment.routes.js'
 import HealthcheckRouter from './routes/healthcheck.routes.js'
+import dashboardRouter from './routes/dashboard.routes.js'
 
 // routes declaration
 app.use("/api/v1/users", userRouter)
@@ -36,6 +37,7 @@ app.use("/api/v1/playlists", playlistRouter)
 app.use("/api/v1/likes", LikeRouter)
 app.use("/api/v1/comments", CommentRouter)
 app.use("/api/v1/healthchecks", HealthcheckRouter)
+app.use("/api/v1/dashboards", dashboardRouter)
 
 // http://localhost:8000/api/v1/users/register
 // http://localhost:8000/api/v1/videos/all-videos
@@ -45,5 +47,6 @@ app.use("/api/v1/healthchecks", HealthcheckRouter)
 // http://localhost:8000/api/v1/likes/toggle/v/:videoId
 // http://localhost:8000/api/v1/comments/:videoId
 // http://localhost:8000/api/v1/healthchecks/
+// http://localhost:8000/api/v1/stats/c/:channelId
 
 export { app }

@@ -153,7 +153,7 @@ const addComment = asyncHandler(async (req, res) => {
     }
 
     if (!content) {
-        throw new ApiError(400, "Content field is required")
+        throw new ApiError(404, "Content field is required")
     }
 
     if (!mongoose.isValidObjectId(videoId)) {
@@ -166,7 +166,7 @@ const addComment = asyncHandler(async (req, res) => {
     }
 
     if (!req.user) {
-        throw new ApiError(404, "User Authentication required")
+        throw new ApiError(401, "User Authentication required")
     }
 
     const comment = await Comment.create({
@@ -194,7 +194,7 @@ const addComment = asyncHandler(async (req, res) => {
     return res
     .status(201)
     .json(
-        new ApiResponse(200, uploadedComment, "Comment uploaded successfully")
+        new ApiResponse(201, uploadedComment, "Comment uploaded successfully")
     )
     
 })

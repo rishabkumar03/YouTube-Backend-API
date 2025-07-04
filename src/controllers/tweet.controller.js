@@ -34,7 +34,7 @@ const createTweet = asyncHandler(async (req, res) => {
     return res
     .status(201)
     .json(
-        new ApiResponse(200, uploadedTweet, "Tweet uploaded successfully")
+        new ApiResponse(201, uploadedTweet, "Tweet uploaded successfully")
     )
 })
 
@@ -50,7 +50,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
     if (userId) {
         const existedUser = await User.findById(userId)
         if(!existedUser){
-            throw new ApiError(400, "User does not exist")
+            throw new ApiError(404, "User does not exist")
         }
     }
     
@@ -115,7 +115,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     const { content } = req.body
 
     if (!mongoose.isValidObjectId(tweetId)) {
-        throw new ApiError(404, "Invalid Tweet Id")
+        throw new ApiError(400, "Invalid Tweet Id")
     }
 
     if (!content) {
@@ -153,7 +153,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
     const { tweetId } = req.params
 
     if (!mongoose.isValidObjectId(tweetId)) {
-        throw new ApiError(404, "Invalid Tweet Id")
+        throw new ApiError(400, "Invalid Tweet Id")
     }
 
     const existingTweet = await Tweet.findById(tweetId)

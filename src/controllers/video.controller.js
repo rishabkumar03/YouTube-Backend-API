@@ -224,7 +224,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
 
     if (!req.user) {
-        throw new ApiError(404, "User Authentication required")
+        throw new ApiError(401, "User Authentication required")
     }
 
     // if (!title) {
@@ -261,11 +261,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const videoFile = await uploadCloudinary(videoFileLocalPath);
 
     if (!thumbnail) {
-        throw new ApiError(400, "Thumbnail file is mandatory")
+        throw new ApiError(404, "Thumbnail file is mandatory")
     }
 
     if (!videoFile) {
-        throw new ApiError(400, "Media file is mandatory")
+        throw new ApiError(404, "Media file is mandatory")
     }
 
     const video = await Video.create({
@@ -292,7 +292,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     return res
     .status(201)
     .json(
-        new ApiResponse(200, uploadedVideo, "Video Uploaded successfully")
+        new ApiResponse(201, uploadedVideo, "Video Uploaded successfully")
     )
 })
 
@@ -425,10 +425,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
     if (!existingVideo) {
         throw new ApiError(404, "Video doesn't exist")
-    }
-
-    if (!existingVideo.owner) {
-        throw new ApiError(404, "wtf, owner is not here?")
     }
 
     if (existingVideo.owner.toString() !== req.user._id.toString()) {

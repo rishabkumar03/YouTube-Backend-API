@@ -28,16 +28,14 @@ const createPlaylist = asyncHandler(async (req, res) => {
         "username fullname avatar"
     )
 
-    console.log("Playlist has been created", createdPlaylist)
-
     if (!createdPlaylist) {
         throw new ApiError(500, "Something went wrong")
     }
 
     return res
-    .status(200)
+    .status(201)
     .json(
-        new ApiResponse(200, createdPlaylist, "Playlist created successfully")
+        new ApiResponse(201, createdPlaylist, "Playlist created successfully")
     )
 })
 
@@ -185,7 +183,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 
     // Verify Ownership
     if (existedPlaylist.owner.toString() !== req.user._id.toString()) {
-        throw new ApiError(403, "You dont have permission to modify this playlist")
+        throw new ApiError(404, "You dont have permission to modify this playlist")
     }
 
     // If video already in playlist
@@ -233,7 +231,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     }
 
     if (existedPlaylist.owner.toString() !== req.user._id.toString()) {
-        throw new ApiError(403, "You dont have permission to modify this playlist")
+        throw new ApiError(404, "You dont have permission to modify this playlist")
     }
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
@@ -295,11 +293,11 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     }
 
     if (!name && !description) {
-        throw new ApiError(400, "Atleast one of them is required")
+        throw new ApiError(404, "Atleast one of them is required")
     }
 
     if (existingPlaylist.owner.toString() !== req.user._id.toString()) {
-        throw new ApiError(400, "You cannot modify this playlist")
+        throw new ApiError(404, "You cannot modify this playlist")
     }
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
