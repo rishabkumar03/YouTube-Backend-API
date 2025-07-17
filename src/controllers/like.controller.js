@@ -74,7 +74,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .json(
-            new ApiResponse(200, { liked: false}, "Comment uniked successfully")
+            new ApiResponse(200, { liked: false}, "Comment Uniked Successfully")
         )
     }
 
@@ -87,7 +87,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .json(
-            new ApiResponse(200, { liked: true, likeData: newLikedComment }, "Comment liked successfully" )
+            new ApiResponse(200, { liked: true, likeData: newLikedComment }, "Comment Liked Successfully" )
         )
     }
 })
@@ -115,7 +115,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .json(
-            new ApiResponse(200, { liked: false}, "Tweet unliked successfully")
+            new ApiResponse(200, { liked: false}, "Tweet Unliked Successfully")
         )
     }
 
@@ -128,7 +128,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
         return res
         .status(200)
         .json(
-            new ApiResponse(200, { liked: true, likedData: newLikedTweet}, "Tweet liked successfully")
+            new ApiResponse(200, { liked: true, likedData: newLikedTweet}, "Tweet Liked Successfully")
         )
     }
 })
